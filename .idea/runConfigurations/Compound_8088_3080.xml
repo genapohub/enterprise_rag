@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="前后端_8088_3080" type="CompoundRunConfigurationType" factoryName="Compound Run Configuration">
+    <toRun name="API FastAPI 8088" type="PythonConfigurationType" />
+    <toRun name="后台前端 3080" type="js.build_tools.npm" />
+    <method v="2" />
+  </configuration>
+</component>

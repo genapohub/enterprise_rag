@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>知识库列表 · 企业 RAG 知识库</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <style>
+    .kb-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: var(--space-4);
+    }
+    .kb-card {
+      display: flex;
+      flex-direction: column;
+      padding: var(--space-5);
+      transition: border-color var(--motion-fast) var(--ease-out),
+        box-shadow var(--motion-fast) var(--ease-out);
+      text-decoration: none;
+      color: inherit;
+      min-height: 168px;
+    }
+    .kb-card:hover {
+      border-color: var(--color-accent-muted);
+      box-shadow: var(--shadow-md);
+      text-decoration: none;
+      color: inherit;
+    }
+    .kb-card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-3);
+      margin-bottom: var(--space-3);
+    }
+    .kb-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background: var(--color-accent-subtle);
+      color: var(--color-accent);
+      display: grid;
+      place-items: center;
+    }
+    .kb-card h2 {
+      margin: 0 0 var(--space-2);
+      font-size: var(--text-md);
+      font-weight: var(--weight-semibold);
+      letter-spacing: -0.01em;
+    }
+    .kb-card p {
+      margin: 0;
+      flex: 1;
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+      line-height: var(--leading-relaxed);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .kb-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      margin-top: var(--space-4);
+      padding-top: var(--space-3);
+      border-top: 1px solid var(--color-divider);
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-5);
+    }
+    .search-box {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+      max-width: 360px;
+    }
+    .search-box svg {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-text-tertiary);
+      pointer-events: none;
+    }
+    .search-box .input {
+      padding-left: 36px;
+    }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: var(--color-overlay);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: var(--space-4);
+    }
+    .modal {
+      width: 100%;
+      max-width: 440px;
+      background: var(--color-surface);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+      padding: var(--space-6);
+    }
+    .modal h3 {
+      margin: 0 0 var(--space-2);
+      font-size: var(--text-xl);
+      font-weight: var(--weight-semibold);
+    }
+    .modal-desc {
+      margin: 0 0 var(--space-5);
+      color: var(--color-text-secondary);
+      font-size: var(--text-sm);
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-3);
+      margin-top: var(--space-5);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo" aria-hidden="true">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="sidebar-brand-text">企业 RAG 知识库</div>
+          <div class="sidebar-brand-sub">单组织 MVP</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav" aria-label="主导航">
+        <a class="nav-item is-active" href="02-kb-list.html">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          知识库
+        </a>
+        <a class="nav-item" href="04-chat.html">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          对话问答
+        </a>
+        <a class="nav-item" href="05-members.html">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          成员与角色
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-chip">
+          <div class="avatar">管</div>
+          <div>
+            <div class="user-name">王敏</div>
+            <div class="user-role">管理员</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <div class="state-switcher">
+        <strong>审阅状态</strong>
+        <button type="button" class="state-btn is-active" data-state="filled">有数据</button>
+        <button type="button" class="state-btn" data-state="empty">空态</button>
+        <button type="button" class="state-btn" data-state="create">新建弹层</button>
+      </div>
+
+      <header class="topbar">
+        <h1 class="topbar-title">知识库</h1>
+        <div class="topbar-actions">
+          <button type="button" class="btn btn-primary" id="btn-create">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            新建知识库
+          </button>
+        </div>
+      </header>
+
+      <div class="content content-narrow">
+        <div class="page-header">
+          <div>
+            <h1>全部知识库</h1>
+            <p class="page-desc">按业务主题划分文档集合；成员可在对话页选择知识库提问。</p>
+          </div>
+        </div>
+
+        <div id="view-filled">
+          <div class="toolbar">
+            <div class="search-box">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <input class="input" type="search" placeholder="搜索知识库名称" aria-label="搜索知识库" />
+            </div>
+            <select class="select" style="width:auto;min-width:140px;" aria-label="状态筛选">
+              <option>全部状态</option>
+              <option>可用</option>
+              <option>已归档</option>
+            </select>
+          </div>
+          <div class="kb-grid">
+            <a class="card kb-card" href="03-kb-docs.html">
+              <div class="kb-card-top">
+                <div class="kb-icon">
+                  <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+                </div>
+                <span class="badge badge-ready badge-dot">可用</span>
+              </div>
+              <h2>人事制度与流程</h2>
+              <p>员工手册、请假报销、绩效与晋升相关制度文档。</p>
+              <div class="kb-meta">
+                <span>12 份文档</span>
+                <span>更新于 10-28</span>
+              </div>
+            </a>
+            <a class="card kb-card" href="03-kb-docs.html">
+              <div class="kb-card-top">
+                <div class="kb-icon">
+                  <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                </div>
+                <span class="badge badge-ready badge-dot">可用</span>
+              </div>
+              <h2>产品与研发规范</h2>
+              <p>需求评审、发布清单、事故复盘模板与编码约定。</p>
+              <div class="kb-meta">
+                <span>28 份文档</span>
+                <span>更新于 11-01</span>
+              </div>
+            </a>
+            <a class="card kb-card" href="03-kb-docs.html">
+              <div class="kb-card-top">
+                <div class="kb-icon">
+                  <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                </div>
+                <span class="badge badge-pending badge-dot">已归档</span>
+              </div>
+              <h2>2024 年度制度归档</h2>
+              <p>已下线制度备份，仅可查阅，不再参与问答检索。</p>
+              <div class="kb-meta">
+                <span>9 份文档</span>
+                <span>归档于 01-15</span>
+              </div>
+            </a>
+            <a class="card kb-card" href="03-kb-docs.html">
+              <div class="kb-card-top">
+                <div class="kb-icon">
+                  <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                </div>
+                <span class="badge badge-indexing badge-dot">索引中</span>
+              </div>
+              <h2>客户成功话术库</h2>
+              <p>常见异议处理、续约流程与案例摘要，正在重建索引。</p>
+              <div class="kb-meta">
+                <span>5 份文档</span>
+                <span>更新于 今天</span>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <div id="view-empty" class="card hidden">
+          <div class="state-panel">
+            <div class="state-panel-icon">
+              <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <h2 class="state-panel-title">还没有知识库</h2>
+            <p class="state-panel-desc">创建第一个知识库后，即可上传 PDF、Word、Markdown 等文档，供成员提问检索。</p>
+            <div class="state-panel-actions">
+              <button type="button" class="btn btn-primary" id="btn-create-empty">新建知识库</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-create" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="create-title">
+    <div class="modal">
+      <h3 id="create-title">新建知识库</h3>
+      <p class="modal-desc">名称在组织内唯一；创建后默认可用于对话检索。</p>
+      <div class="field">
+        <label class="field-label" for="kb-name">名称</label>
+        <input class="input" id="kb-name" type="text" placeholder="例如 人事制度与流程" />
+      </div>
+      <div class="field">
+        <label class="field-label" for="kb-desc">简介（可选）</label>
+        <textarea class="textarea" id="kb-desc" placeholder="简要说明收录范围，便于成员选择"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" id="btn-cancel">取消</button>
+        <button type="button" class="btn btn-primary">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var filled = document.getElementById("view-filled");
+      var empty = document.getElementById("view-empty");
+      var modal = document.getElementById("modal-create");
+      var btns = document.querySelectorAll(".state-btn");
+
+      function setState(name) {
+        btns.forEach(function (b) {
+          b.classList.toggle("is-active", b.getAttribute("data-state") === name);
+        });
+        filled.classList.toggle("hidden", name === "empty");
+        empty.classList.toggle("hidden", name !== "empty");
+        modal.classList.toggle("hidden", name !== "create");
+        if (name === "create") {
+          filled.classList.remove("hidden");
+          empty.classList.add("hidden");
+        }
+      }
+
+      btns.forEach(function (b) {
+        b.addEventListener("click", function () { setState(b.getAttribute("data-state")); });
+      });
+      document.getElementById("btn-create").addEventListener("click", function () { setState("create"); });
+      document.getElementById("btn-create-empty").addEventListener("click", function () { setState("create"); });
+      document.getElementById("btn-cancel").addEventListener("click", function () { setState("filled"); });
+      modal.addEventListener("click", function (e) {
+        if (e.target === modal) setState("filled");
+      });
+    })();
+  </script>
+</body>
+</html>

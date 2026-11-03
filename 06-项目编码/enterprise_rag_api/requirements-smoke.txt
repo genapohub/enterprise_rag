@@ -1,0 +1,13 @@
+# 本机 sqlite+stub 冒烟。未钉死版本以便 Python 3.14 能拉到有 wheel 的包。
+# Docker/生产请用 requirements.txt (+ requirements-postgres.txt)，建议 Python 3.12。
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+pydantic-settings
+python-jose[cryptography]
+bcrypt
+python-multipart
+httpx
+pytest
+pytest-asyncio

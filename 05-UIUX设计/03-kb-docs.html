@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>文档管理 · 人事制度与流程 · 企业 RAG 知识库</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <style>
+    .crumb {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--text-sm);
+      color: var(--color-text-tertiary);
+      margin-bottom: var(--space-4);
+    }
+    .crumb a { color: var(--color-text-secondary); }
+    .crumb a:hover { color: var(--color-accent); }
+    .crumb-sep { opacity: 0.5; }
+    .doc-name {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      font-weight: var(--weight-medium);
+    }
+    .doc-file-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: var(--color-bg-muted);
+      color: var(--color-text-secondary);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .doc-sub {
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+      font-weight: var(--weight-regular);
+      margin-top: 2px;
+    }
+    .upload-zone {
+      border: 1.5px dashed var(--color-border-strong);
+      border-radius: var(--radius-lg);
+      background: var(--color-surface);
+      padding: var(--space-8) var(--space-6);
+      text-align: center;
+      margin-bottom: var(--space-5);
+      transition: border-color var(--motion-fast) var(--ease-out),
+        background var(--motion-fast) var(--ease-out);
+    }
+    .upload-zone:hover,
+    .upload-zone.is-drag {
+      border-color: var(--color-accent);
+      background: var(--color-accent-subtle);
+    }
+    .upload-zone h3 {
+      margin: var(--space-3) 0 var(--space-2);
+      font-size: var(--text-md);
+      font-weight: var(--weight-semibold);
+    }
+    .upload-zone p {
+      margin: 0 0 var(--space-4);
+      color: var(--color-text-secondary);
+      font-size: var(--text-sm);
+    }
+    .skeleton-row td {
+      padding: var(--space-4);
+    }
+    .skel {
+      height: 12px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(90deg, var(--color-bg-muted) 25%, var(--color-bg-subtle) 50%, var(--color-bg-muted) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s ease-in-out infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .confirm-box {
+      max-width: 400px;
+      margin: var(--space-8) auto;
+      padding: var(--space-6);
+    }
+    .confirm-box h3 {
+      margin: 0 0 var(--space-2);
+      font-size: var(--text-lg);
+      font-weight: var(--weight-semibold);
+    }
+    .confirm-box p {
+      margin: 0 0 var(--space-5);
+      color: var(--color-text-secondary);
+      font-size: var(--text-sm);
+      line-height: var(--leading-relaxed);
+    }
+    .confirm-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-3);
+    }
+    .member-note {
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+      margin-top: var(--space-3);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo" aria-hidden="true">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="sidebar-brand-text">企业 RAG 知识库</div>
+          <div class="sidebar-brand-sub">单组织 MVP</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav" aria-label="主导航">
+        <a class="nav-item is-active" href="02-kb-list.html">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          知识库
+        </a>
+        <a class="nav-item" href="04-chat.html">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          对话问答
+        </a>
+        <a class="nav-item" href="05-members.html">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          成员与角色
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-chip">
+          <div class="avatar">管</div>
+          <div>
+            <div class="user-name">王敏</div>
+            <div class="user-role">管理员</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <div class="state-switcher">
+        <strong>审阅状态</strong>
+        <button type="button" class="state-btn is-active" data-state="list">有文档</button>
+        <button type="button" class="state-btn" data-state="empty">空库</button>
+        <button type="button" class="state-btn" data-state="loading">加载中</button>
+        <button type="button" class="state-btn" data-state="error">加载失败</button>
+        <button type="button" class="state-btn" data-state="upload-fail">上传失败</button>
+        <button type="button" class="state-btn" data-state="delete">删除确认</button>
+      </div>
+
+      <header class="topbar">
+        <h1 class="topbar-title">文档管理</h1>
+        <div class="topbar-actions">
+          <a class="btn btn-secondary" href="04-chat.html">进入对话</a>
+          <button type="button" class="btn btn-primary" id="btn-upload-top">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            上传文档
+          </button>
+        </div>
+      </header>
+
+      <div class="content content-narrow">
+        <nav class="crumb" aria-label="面包屑">
+          <a href="02-kb-list.html">知识库</a>
+          <span class="crumb-sep">/</span>
+          <span>人事制度与流程</span>
+        </nav>
+
+        <div class="page-header">
+          <div>
+            <h1>人事制度与流程</h1>
+            <p class="page-desc">支持 PDF、Word（.docx）、Markdown、纯文本；上传后显示解析与索引状态。管理员可删除；成员只读列表。</p>
+          </div>
+        </div>
+
+        <!-- 有文档 -->
+        <div id="view-list">
+          <div class="upload-zone" id="upload-zone">
+            <svg class="icon icon-xl" style="color:var(--color-accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+            </svg>
+            <h3>拖拽文件到此处，或点击选择</h3>
+            <p>单文件建议不超过 50MB；解析失败会显示可读原因，可重试或删除后重传。</p>
+            <button type="button" class="btn btn-secondary">选择文件</button>
+          </div>
+
+          <div id="upload-fail-alert" class="alert alert-error hidden" role="alert" style="margin-bottom:var(--space-4);">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            <div>
+              <strong style="display:block;margin-bottom:2px;">上传失败</strong>
+              「绩效面谈指引.docx」未能完成上传：文件损坏或格式不受支持。请检查后重试，或换 PDF / Markdown。
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data">
+              <thead>
+                <tr>
+                  <th>文档</th>
+                  <th>大小</th>
+                  <th>状态</th>
+                  <th>上传时间</th>
+                  <th style="text-align:right;">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <div class="doc-name">
+                      <div class="doc-file-icon">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                      </div>
+                      <div>
+                        员工手册_2026.pdf
+                        <div class="doc-sub">上传人 王敏</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>2.4 MB</td>
+                  <td><span class="badge badge-ready badge-dot">已索引</span></td>
+                  <td>2026-10-28 14:22</td>
+                  <td>
+                    <div class="row-actions">
+                      <button type="button" class="btn btn-ghost btn-sm">查看</button>
+                      <button type="button" class="btn btn-danger-outline btn-sm js-delete">删除</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="doc-name">
+                      <div class="doc-file-icon">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                      </div>
+                      <div>
+                        请假与报销流程.md
+                        <div class="doc-sub">上传人 王敏</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>48 KB</td>
+                  <td><span class="badge badge-ready badge-dot">已索引</span></td>
+                  <td>2026-10-28 14:25</td>
+                  <td>
+                    <div class="row-actions">
+                      <button type="button" class="btn btn-ghost btn-sm">查看</button>
+                      <button type="button" class="btn btn-danger-outline btn-sm js-delete">删除</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="doc-name">
+                      <div class="doc-file-icon">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                      </div>
+                      <div>
+                        绩效管理制度.docx
+                        <div class="doc-sub">上传人 李晨</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>186 KB</td>
+                  <td><span class="badge badge-indexing badge-dot">索引中</span></td>
+                  <td>2026-11-02 09:10</td>
+                  <td>
+                    <div class="row-actions">
+                      <button type="button" class="btn btn-ghost btn-sm" disabled>查看</button>
+                      <button type="button" class="btn btn-danger-outline btn-sm js-delete">删除</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="doc-name">
+                      <div class="doc-file-icon">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                      </div>
+                      <div>
+                        考勤异常说明.txt
+                        <div class="doc-sub">上传人 王敏 · 解析失败：编码无法识别</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>12 KB</td>
+                  <td><span class="badge badge-failed badge-dot">失败</span></td>
+                  <td>2026-11-01 16:40</td>
+                  <td>
+                    <div class="row-actions">
+                      <button type="button" class="btn btn-secondary btn-sm">重试</button>
+                      <button type="button" class="btn btn-danger-outline btn-sm js-delete">删除</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="member-note">权限提示：成员进入本页时隐藏「上传」「删除」「重试」，仅可浏览文档名与状态。</p>
+        </div>
+
+        <!-- 空库 -->
+        <div id="view-empty" class="card hidden">
+          <div class="state-panel">
+            <div class="state-panel-icon">
+              <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>
+              </svg>
+            </div>
+            <h2 class="state-panel-title">知识库暂无文档</h2>
+            <p class="state-panel-desc">上传至少一份文档并完成索引后，成员才能在对话中检索到内容。支持 PDF、docx、Markdown、纯文本。</p>
+            <div class="state-panel-actions">
+              <button type="button" class="btn btn-primary">上传第一份文档</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 加载中 -->
+        <div id="view-loading" class="hidden">
+          <div class="table-wrap">
+            <table class="data">
+              <thead>
+                <tr><th>文档</th><th>大小</th><th>状态</th><th>上传时间</th><th></th></tr>
+              </thead>
+              <tbody>
+                <tr class="skeleton-row"><td colspan="5"><div class="skel" style="width:70%"></div></td></tr>
+                <tr class="skeleton-row"><td colspan="5"><div class="skel" style="width:55%"></div></td></tr>
+                <tr class="skeleton-row"><td colspan="5"><div class="skel" style="width:62%"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="state-panel" style="padding-top:var(--space-6);">
+            <div class="spinner" aria-hidden="true"></div>
+            <p class="state-panel-desc">正在加载文档列表…</p>
+          </div>
+        </div>
+
+        <!-- 加载失败 -->
+        <div id="view-error" class="card hidden">
+          <div class="state-panel">
+            <div class="state-panel-icon" style="background:var(--color-danger-subtle);color:var(--color-danger);">
+              <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+              </svg>
+            </div>
+            <h2 class="state-panel-title">文档列表加载失败</h2>
+            <p class="state-panel-desc">无法连接服务或权限校验失败。请检查网络后重试；若持续出现请联系管理员。</p>
+            <div class="state-panel-actions">
+              <button type="button" class="btn btn-primary">重新加载</button>
+              <a class="btn btn-secondary" href="02-kb-list.html">返回知识库列表</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 删除确认 -->
+        <div id="view-delete" class="card confirm-box hidden">
+          <h3>删除文档？</h3>
+          <p>将删除「员工手册_2026.pdf」。删除后新的问答不再引用该文档；已产生的历史回答不会回溯改写。</p>
+          <div class="confirm-actions">
+            <button type="button" class="btn btn-secondary" id="btn-cancel-del">取消</button>
+            <button type="button" class="btn btn-danger">确认删除</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var views = {
+        list: document.getElementById("view-list"),
+        empty: document.getElementById("view-empty"),
+        loading: document.getElementById("view-loading"),
+        error: document.getElementById("view-error"),
+        delete: document.getElementById("view-delete")
+      };
+      var failAlert = document.getElementById("upload-fail-alert");
+      var btns = document.querySelectorAll(".state-btn");
+
+      function setState(name) {
+        btns.forEach(function (b) {
+          b.classList.toggle("is-active", b.getAttribute("data-state") === name);
+        });
+        var showList = name === "list" || name === "upload-fail";
+        Object.keys(views).forEach(function (k) {
+          views[k].classList.add("hidden");
+        });
+        if (showList) views.list.classList.remove("hidden");
+        else if (views[name]) views[name].classList.remove("hidden");
+        failAlert.classList.toggle("hidden", name !== "upload-fail");
+      }
+
+      btns.forEach(function (b) {
+        b.addEventListener("click", function () { setState(b.getAttribute("data-state")); });
+      });
+      document.querySelectorAll(".js-delete").forEach(function (el) {
+        el.addEventListener("click", function () { setState("delete"); });
+      });
+      document.getElementById("btn-cancel-del").addEventListener("click", function () { setState("list"); });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>对话问答 · 企业 RAG 知识库</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <style>
+    .chat-shell {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      height: calc(100vh - var(--topbar-height) - 41px);
+      height: calc(100dvh - var(--topbar-height) - 41px);
+      max-width: 880px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .chat-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-4) 0;
+      border-bottom: 1px solid var(--color-divider);
+      margin-bottom: var(--space-2);
+    }
+    .kb-select {
+      min-width: 220px;
+      max-width: 320px;
+    }
+    .chat-thread {
+      overflow-y: auto;
+      padding: var(--space-4) 0 var(--space-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-5);
+    }
+    .msg {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      max-width: 100%;
+    }
+    .msg-user {
+      align-items: flex-end;
+    }
+    .msg-assistant {
+      align-items: flex-start;
+    }
+    .msg-label {
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+      font-weight: var(--weight-medium);
+    }
+    .bubble {
+      max-width: 720px;
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-lg);
+      font-size: var(--text-base);
+      line-height: var(--leading-relaxed);
+    }
+    .bubble-user {
+      background: var(--color-accent);
+      color: var(--color-accent-on);
+      border-bottom-right-radius: var(--radius-sm);
+    }
+    .bubble-assistant {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      color: var(--color-text);
+      border-bottom-left-radius: var(--radius-sm);
+      box-shadow: var(--shadow-xs);
+    }
+    .bubble-assistant p {
+      margin: 0 0 var(--space-3);
+    }
+    .bubble-assistant p:last-child {
+      margin-bottom: 0;
+    }
+    .cite-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      margin-top: var(--space-4);
+      padding-top: var(--space-3);
+      border-top: 1px solid var(--color-divider);
+    }
+    .cite-list-title {
+      font-size: var(--text-xs);
+      font-weight: var(--weight-semibold);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-1);
+    }
+    .cite-card {
+      display: block;
+      padding: var(--space-3);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-bg-muted);
+      text-decoration: none;
+      color: inherit;
+      transition: border-color var(--motion-fast) var(--ease-out),
+        background var(--motion-fast) var(--ease-out);
+    }
+    .cite-card:hover {
+      border-color: var(--color-accent-muted);
+      background: var(--color-accent-subtle);
+      text-decoration: none;
+      color: inherit;
+    }
+    .cite-doc {
+      font-size: var(--text-sm);
+      font-weight: var(--weight-semibold);
+      color: var(--color-accent);
+      margin-bottom: 4px;
+    }
+    .cite-snippet {
+      font-size: var(--text-xs);
+      color: var(--color-text-secondary);
+      line-height: var(--leading-relaxed);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .cite-meta {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--color-text-tertiary);
+    }
+    .no-hit {
+      background: var(--color-warning-subtle);
+      border: 1px solid var(--color-warning-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-3) var(--space-4);
+      font-size: var(--text-sm);
+      color: var(--color-warning);
+      line-height: var(--leading-relaxed);
+    }
+    .no-hit strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--color-text);
+      font-weight: var(--weight-semibold);
+    }
+    .typing {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: var(--space-3) var(--space-4);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      border-bottom-left-radius: var(--radius-sm);
+    }
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-text-tertiary);
+      animation: bounce 1.2s ease-in-out infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.15s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+      40% { transform: translateY(-4px); opacity: 1; }
+    }
+    .composer {
+      border-top: 1px solid var(--color-border);
+      background: var(--color-surface);
+      padding: var(--space-4) 0;
+      position: sticky;
+      bottom: 0;
+    }
+    .composer-box {
+      display: flex;
+      gap: var(--space-3);
+      align-items: flex-end;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-3);
+      background: var(--color-surface);
+      box-shadow: var(--shadow-sm);
+      transition: border-color var(--motion-fast) var(--ease-out),
+        box-shadow var(--motion-fast) var(--ease-out);
+    }
+    .composer-box:focus-within {
+      border-color: var(--color-accent);
+      box-shadow: var(--shadow-focus);
+    }
+    .composer-box textarea {
+      flex: 1;
+      border: none;
+      resize: none;
+      min-height: 44px;
+      max-height: 140px;
+      padding: var(--space-2);
+      background: transparent;
+      line-height: var(--leading-relaxed);
+    }
+    .composer-box textarea:focus {
+      outline: none;
+      box-shadow: none;
+    }
+    .composer-hint {
+      margin-top: var(--space-2);
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+    }
+    .empty-chat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: var(--space-3);
+      color: var(--color-text-secondary);
+      padding: var(--space-10) var(--space-4);
+    }
+    .empty-chat h2 {
+      margin: 0;
+      font-size: var(--text-xl);
+      font-weight: var(--weight-semibold);
+      color: var(--color-text);
+    }
+    .empty-chat p {
+      margin: 0;
+      max-width: 360px;
+      font-size: var(--text-sm);
+      line-height: var(--leading-relaxed);
+    }
+    .suggest-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      justify-content: center;
+      margin-top: var(--space-3);
+    }
+    .suggest-chip {
+      appearance: none;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      border-radius: var(--radius-pill);
+      padding: 8px 14px;
+      font-size: var(--text-xs);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+    }
+    .suggest-chip:hover {
+      border-color: var(--color-accent-muted);
+      color: var(--color-accent);
+      background: var(--color-accent-subtle);
+    }
+    .content-chat {
+      padding: 0 var(--space-6) var(--space-4);
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo" aria-hidden="true">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="sidebar-brand-text">企业 RAG 知识库</div>
+          <div class="sidebar-brand-sub">单组织 MVP</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav" aria-label="主导航">
+        <a class="nav-item" href="02-kb-list.html">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          知识库
+        </a>
+        <a class="nav-item is-active" href="04-chat.html">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          对话问答
+        </a>
+        <a class="nav-item" href="05-members.html">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          成员与角色
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-chip">
+          <div class="avatar">成</div>
+          <div>
+            <div class="user-name">陈可</div>
+            <div class="user-role">成员</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <div class="state-switcher">
+        <strong>审阅状态</strong>
+        <button type="button" class="state-btn is-active" data-state="answer">答案+引用</button>
+        <button type="button" class="state-btn" data-state="nohit">无命中</button>
+        <button type="button" class="state-btn" data-state="loading">加载/生成中</button>
+        <button type="button" class="state-btn" data-state="error">请求错误</button>
+        <button type="button" class="state-btn" data-state="idle">空会话</button>
+      </div>
+
+      <header class="topbar">
+        <h1 class="topbar-title">对话问答</h1>
+        <div class="topbar-actions">
+          <button type="button" class="btn btn-secondary btn-sm">新建会话</button>
+        </div>
+      </header>
+
+      <div class="content-chat">
+        <div class="chat-shell">
+          <div class="chat-toolbar">
+            <label class="field-label" for="kb" style="margin:0;">知识库</label>
+            <select class="select kb-select" id="kb" aria-label="选择知识库">
+              <option>人事制度与流程</option>
+              <option>产品与研发规范</option>
+              <option>客户成功话术库</option>
+            </select>
+            <span class="badge badge-ready badge-dot">可检索</span>
+          </div>
+
+          <div class="chat-thread" id="thread" aria-live="polite">
+            <!-- 由脚本按状态填充 / 切换可见块 -->
+            <div id="view-idle" class="empty-chat hidden">
+              <div class="state-panel-icon">
+                <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </div>
+              <h2>向当前知识库提问</h2>
+              <p>问题尽量具体。有依据时会给出答案并附引用；知识库中找不到时会明确告知，不会假装知道。</p>
+              <div class="suggest-row">
+                <button type="button" class="suggest-chip">年假最长可以请几天？</button>
+                <button type="button" class="suggest-chip">报销需要哪些附件？</button>
+                <button type="button" class="suggest-chip">试用期考核标准是什么？</button>
+              </div>
+            </div>
+
+            <div id="view-answer">
+              <div class="msg msg-user">
+                <span class="msg-label">陈可</span>
+                <div class="bubble bubble-user">入职满一年后，年假最长可以请几天？需要提前多久申请？</div>
+              </div>
+              <div class="msg msg-assistant">
+                <span class="msg-label">助手 · 人事制度与流程</span>
+                <div class="bubble bubble-assistant">
+                  <p>根据现行员工手册：入职满 1 年不满 10 年的员工，年休假为 <strong>5 个工作日</strong>。申请须至少提前 <strong>3 个工作日</strong>在人事系统提交，经直属上级审批后生效。</p>
+                  <p>若与法定节假日连休，仍按年休假额度扣减；跨自然年未休完的部分，按手册「结转规则」处理（当年 3 月 31 日前可结转使用）。</p>
+                  <div class="cite-list">
+                    <div class="cite-list-title">引用来源</div>
+                    <a class="cite-card" href="03-kb-docs.html">
+                      <div class="cite-doc">员工手册_2026.pdf</div>
+                      <div class="cite-snippet">「第三章 休假 · 第 3.2 条 年休假：职工累计工作已满 1 年不满 10 年的，年休假 5 天；……请假须提前不少于 3 个工作日提交申请。」</div>
+                      <div class="cite-meta">片段 · 第 12 页</div>
+                    </a>
+                    <a class="cite-card" href="03-kb-docs.html">
+                      <div class="cite-doc">请假与报销流程.md</div>
+                      <div class="cite-snippet">「年假申请路径：人事系统 → 休假申请 → 选择年休假 → 直属上级审批。紧急情况可事后补单，须在销假后 2 个工作日内完成。」</div>
+                      <div class="cite-meta">片段 · 第 2 节</div>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="view-nohit" class="hidden">
+              <div class="msg msg-user">
+                <span class="msg-label">陈可</span>
+                <div class="bubble bubble-user">我们公司股票期权的行权窗口是怎样的？</div>
+              </div>
+              <div class="msg msg-assistant">
+                <span class="msg-label">助手 · 人事制度与流程</span>
+                <div class="bubble bubble-assistant">
+                  <div class="no-hit">
+                    <strong>知识库中未找到相关内容</strong>
+                    当前所选「人事制度与流程」未检索到与股票期权 / 行权窗口匹配的文档片段。请换一个知识库重试，或请管理员补充相关制度后再问。不会根据训练知识编造组织内部政策。
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="view-loading" class="hidden">
+              <div class="msg msg-user">
+                <span class="msg-label">陈可</span>
+                <div class="bubble bubble-user">报销差旅费需要准备哪些附件？</div>
+              </div>
+              <div class="msg msg-assistant">
+                <span class="msg-label">助手 · 正在生成</span>
+                <div class="typing" role="status" aria-label="正在生成回答">
+                  <span class="typing-dot"></span>
+                  <span class="typing-dot"></span>
+                  <span class="typing-dot"></span>
+                </div>
+              </div>
+            </div>
+
+            <div id="view-error" class="hidden">
+              <div class="msg msg-user">
+                <span class="msg-label">陈可</span>
+                <div class="bubble bubble-user">试用期考核标准是什么？</div>
+              </div>
+              <div class="msg msg-assistant">
+                <span class="msg-label">助手</span>
+                <div class="alert alert-error" role="alert" style="max-width:520px;">
+                  <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                  <div>
+                    <strong style="display:block;margin-bottom:2px;">回答生成失败</strong>
+                    服务暂时不可用或检索超时。请稍后重试；若连续失败，请告知管理员检查索引与模型网关。
+                    <div style="margin-top:var(--space-3);">
+                      <button type="button" class="btn btn-secondary btn-sm">重新发送</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="composer">
+            <div class="composer-box">
+              <label class="sr-only" for="q">输入问题</label>
+              <textarea id="q" rows="2" placeholder="输入问题，Enter 发送，Shift+Enter 换行"></textarea>
+              <button type="button" class="btn btn-primary" aria-label="发送">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>
+                发送
+              </button>
+            </div>
+            <p class="composer-hint">答案必须带来源引用；无命中时会明确告知「知识库中未找到」，不会编造制度内容。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var map = {
+        answer: "view-answer",
+        nohit: "view-nohit",
+        loading: "view-loading",
+        error: "view-error",
+        idle: "view-idle"
+      };
+      var btns = document.querySelectorAll(".state-btn");
+
+      function setState(name) {
+        btns.forEach(function (b) {
+          b.classList.toggle("is-active", b.getAttribute("data-state") === name);
+        });
+        Object.keys(map).forEach(function (k) {
+          document.getElementById(map[k]).classList.toggle("hidden", k !== name);
+        });
+      }
+
+      btns.forEach(function (b) {
+        b.addEventListener("click", function () {
+          setState(b.getAttribute("data-state"));
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

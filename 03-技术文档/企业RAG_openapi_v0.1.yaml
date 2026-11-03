@@ -1,0 +1,934 @@
+openapi: 3.0.3
+info:
+  title: 企业 RAG 知识库 API
+  version: 0.1.0
+  description: |
+    单组织 Web RAG MVP。统一响应 `{code,data,message}`。
+    文档状态机：uploaded→parsing→parse_failed|chunking→indexing→ready|index_failed。
+servers:
+  - url: http://localhost:8088
+    description: local compose / uvicorn
+tags:
+  - name: health
+  - name: auth
+  - name: knowledge-bases
+  - name: documents
+  - name: conversations
+  - name: members
+
+paths:
+  /healthz:
+    get:
+      tags: [health]
+      summary: Health check
+      operationId: healthz
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /api/v1/auth/login:
+    post:
+      tags: [auth]
+      summary: Login
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [auth]
+      summary: Refresh access token
+      operationId: refresh
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/auth/me:
+    get:
+      tags: [auth]
+      summary: Current user
+      operationId: me
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/knowledge-bases:
+    get:
+      tags: [knowledge-bases]
+      summary: List knowledge bases
+      operationId: listKnowledgeBases
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/page_size"
+        - name: include_archived
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBListEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [knowledge-bases]
+      summary: Create knowledge base (admin)
+      operationId: createKnowledgeBase
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KBCreate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBEnvelope"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/knowledge-bases/{kb_id}:
+    get:
+      tags: [knowledge-bases]
+      summary: Get knowledge base
+      operationId: getKnowledgeBase
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/kb_id"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBEnvelope"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [knowledge-bases]
+      summary: Update knowledge base (admin)
+      operationId: updateKnowledgeBase
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/kb_id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KBUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBEnvelope"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/knowledge-bases/{kb_id}/archive:
+    post:
+      tags: [knowledge-bases]
+      summary: Archive KB (admin)
+      operationId: archiveKnowledgeBase
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/kb_id"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBEnvelope"
+
+  /api/v1/knowledge-bases/{kb_id}/unarchive:
+    post:
+      tags: [knowledge-bases]
+      summary: Unarchive KB (admin)
+      operationId: unarchiveKnowledgeBase
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/kb_id"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBEnvelope"
+
+  /api/v1/knowledge-bases/{kb_id}/documents:
+    get:
+      tags: [documents]
+      summary: List documents in KB
+      operationId: listDocuments
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/kb_id"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/page_size"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocListEnvelope"
+    post:
+      tags: [documents]
+      summary: Upload document (admin)
+      operationId: uploadDocument
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/kb_id"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: OK (status starts at uploaded then advances)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocEnvelope"
+
+  /api/v1/documents/{doc_id}:
+    get:
+      tags: [documents]
+      summary: Get document (status machine fields)
+      operationId: getDocument
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/doc_id"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocEnvelope"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [documents]
+      summary: Soft-delete document (admin)
+      operationId: deleteDocument
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/doc_id"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkEnvelope"
+
+  /api/v1/documents/{doc_id}/archive:
+    post:
+      tags: [documents]
+      summary: Archive (delist) document
+      operationId: archiveDocument
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/doc_id"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocEnvelope"
+
+  /api/v1/documents/{doc_id}/unarchive:
+    post:
+      tags: [documents]
+      summary: Unarchive document
+      operationId: unarchiveDocument
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/doc_id"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocEnvelope"
+
+  /api/v1/documents/{doc_id}/reindex:
+    post:
+      tags: [documents]
+      summary: Retry indexing from failed states
+      operationId: reindexDocument
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/doc_id"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocEnvelope"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/conversations:
+    get:
+      tags: [conversations]
+      summary: List my conversations
+      operationId: listConversations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: kb_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/page_size"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConvListEnvelope"
+    post:
+      tags: [conversations]
+      summary: Create conversation
+      operationId: createConversation
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConvCreate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConvEnvelope"
+
+  /api/v1/conversations/{conv_id}:
+    get:
+      tags: [conversations]
+      summary: Get conversation
+      operationId: getConversation
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/conv_id"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConvEnvelope"
+    delete:
+      tags: [conversations]
+      summary: Delete conversation
+      operationId: deleteConversation
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/conv_id"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkEnvelope"
+
+  /api/v1/conversations/{conv_id}/messages:
+    get:
+      tags: [conversations]
+      summary: List messages
+      operationId: listMessages
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/conv_id"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/page_size"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MsgListEnvelope"
+    post:
+      tags: [conversations]
+      summary: Ask (non-streaming Q&A with citations)
+      operationId: askMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/conv_id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AskRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AskEnvelope"
+
+  /api/v1/conversations/{conv_id}/messages:stream:
+    post:
+      tags: [conversations]
+      summary: Ask streaming (SSE stub in MVP)
+      operationId: askMessageStream
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/conv_id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AskRequest"
+      responses:
+        "501":
+          description: Not implemented stub
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /api/v1/members:
+    get:
+      tags: [members]
+      summary: List members (admin)
+      operationId: listMembers
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/page_size"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberListEnvelope"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    page_size:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    kb_id:
+      name: kb_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    doc_id:
+      name: doc_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    conv_id:
+      name: conv_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    RateLimited:
+      description: Rate limited
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+
+  schemas:
+    ApiEnvelope:
+      type: object
+      required: [code, data, message]
+      properties:
+        code:
+          type: integer
+          example: 0
+        data: {}
+        message:
+          type: string
+
+    ErrorEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/ApiEnvelope"
+        - type: object
+          properties:
+            data:
+              nullable: true
+
+    HealthResponse:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: ok }
+        data:
+          type: object
+          properties:
+            status: { type: string, example: ok }
+            db: { type: string, example: ok }
+            version: { type: string, example: 0.1.0 }
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string }
+        password: { type: string, format: password }
+
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token: { type: string }
+
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        username: { type: string }
+        display_name: { type: string }
+        role:
+          type: string
+          enum: [admin, member]
+        is_active: { type: boolean }
+
+    LoginData:
+      type: object
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string }
+        token_type: { type: string, example: bearer }
+        expires_in: { type: integer, example: 3600 }
+        user:
+          $ref: "#/components/schemas/User"
+
+    LoginEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/ApiEnvelope"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/LoginData"
+
+    TokenEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/ApiEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                access_token: { type: string }
+                refresh_token: { type: string }
+                token_type: { type: string }
+                expires_in: { type: integer }
+
+    UserEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/ApiEnvelope"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/User"
+
+    KBCreate:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 128 }
+        description: { type: string, default: "" }
+
+    KBUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 128 }
+        description: { type: string }
+
+    KnowledgeBase:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string }
+        is_archived: { type: boolean }
+        doc_count: { type: integer }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    KBEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/ApiEnvelope"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/KnowledgeBase"
+
+    PageMeta:
+      type: object
+      properties:
+        items:
+          type: array
+        total: { type: integer }
+        page: { type: integer }
+        page_size: { type: integer }
+
+    KBListEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/ApiEnvelope"
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: "#/components/schemas/PageMeta"
+                - type: object
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/KnowledgeBase"
+
+    DocumentStatus:
+      type: string
+      enum:
+        - uploaded
+        - parsing
+        - parse_failed
+        - chunking
+        - indexing
+        - ready
+        - index_failed
+
+    Document:
+      type: object
+      required: [id, kb_id, name, status]
+      properties:
+        id: { type: string, format: uuid }
+        kb_id: { type: string, format: uuid }
+        name: { type: string }
+        content_type: { type: string }
+        size_bytes: { type: integer }
+        status:
+          $ref: "#/components/schemas/DocumentStatus"
+        fail_reason:
+          type: string
+          nullable: true
+        is_archived: { type: boolean }
+        chunk_count: { type: integer }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        indexed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    DocEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/ApiEnvelope"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/Document"
+
+    DocListEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/ApiEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/Document"
+                total: { type: integer }
+                page: { type: integer }
+                page_size: { type: integer }
+
+    ConvCreate:
+      type: object
+      required: [kb_id]
+      properties:
+        kb_id: { type: string, format: uuid }
+        title: { type: string }
+
+    Conversation:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        kb_id: { type: string, format: uuid }
+        title: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    ConvEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/ApiEnvelope"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/Conversation"
+
+    ConvListEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/ApiEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/Conversation"
+                total: { type: integer }
+                page: { type: integer }
+                page_size: { type: integer }
+
+    AskRequest:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string, minLength: 1, maxLength: 4000 }
+
+    Citation:
+      type: object
+      required: [doc_id, doc_name, chunk_id, snippet]
+      properties:
+        doc_id: { type: string, format: uuid }
+        doc_name: { type: string }
+        chunk_id: { type: string, format: uuid }
+        snippet: { type: string }
+        page:
+          type: integer
+          nullable: true
+        score:
+          type: number
+          nullable: true
+
+    Message:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        role:
+          type: string
+          enum: [user, assistant]
+        content: { type: string }
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Citation"
+        created_at: { type: string, format: date-time }
+
+    AskData:
+      type: object
+      properties:
+        user_message:
+          $ref: "#/components/schemas/Message"
+        assistant_message:
+          $ref: "#/components/schemas/Message"
+
+    AskEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/ApiEnvelope"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/AskData"
+
+    MsgListEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/ApiEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/Message"
+                total: { type: integer }
+                page: { type: integer }
+                page_size: { type: integer }
+
+    Member:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        username: { type: string }
+        display_name: { type: string }
+        role:
+          type: string
+          enum: [admin, member]
+        is_active: { type: boolean }
+        created_at: { type: string, format: date-time }
+
+    MemberListEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/ApiEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/Member"
+                total: { type: integer }
+                page: { type: integer }
+                page_size: { type: integer }
+
+    OkEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/ApiEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                ok: { type: boolean }

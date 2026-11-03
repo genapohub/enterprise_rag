@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>登录 · 企业 RAG 知识库</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <style>
+    .login-page {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--color-bg);
+    }
+    .login-brand {
+      background: var(--color-sidebar);
+      color: var(--color-text-inverse);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: var(--space-10) var(--space-12);
+    }
+    .login-brand-mark {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    .login-brand-mark .mark {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background: var(--color-accent);
+      display: grid;
+      place-items: center;
+    }
+    .login-brand-mark .name {
+      font-size: var(--text-lg);
+      font-weight: var(--weight-semibold);
+      letter-spacing: -0.01em;
+    }
+    .login-brand-body h1 {
+      margin: 0 0 var(--space-4);
+      font-size: var(--text-3xl);
+      font-weight: var(--weight-semibold);
+      letter-spacing: -0.02em;
+      line-height: var(--leading-tight);
+      max-width: 14em;
+    }
+    .login-brand-body p {
+      margin: 0;
+      color: var(--color-text-sidebar);
+      font-size: var(--text-md);
+      line-height: var(--leading-relaxed);
+      max-width: 28em;
+    }
+    .login-brand-foot {
+      font-size: var(--text-xs);
+      color: var(--color-text-sidebar-muted);
+    }
+    .login-panel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-8);
+    }
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+    }
+    .login-card h2 {
+      margin: 0 0 var(--space-2);
+      font-size: var(--text-2xl);
+      font-weight: var(--weight-semibold);
+      letter-spacing: -0.01em;
+    }
+    .login-card .sub {
+      margin: 0 0 var(--space-6);
+      color: var(--color-text-secondary);
+      font-size: var(--text-sm);
+    }
+    .password-wrap {
+      position: relative;
+    }
+    .password-wrap .input {
+      padding-right: 44px;
+    }
+    .toggle-pw {
+      position: absolute;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: transparent;
+      color: var(--color-text-tertiary);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      display: grid;
+      place-items: center;
+    }
+    .toggle-pw:hover {
+      color: var(--color-text-secondary);
+      background: var(--color-bg-muted);
+    }
+    .login-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-5);
+      font-size: var(--text-sm);
+    }
+    .checkbox {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      user-select: none;
+    }
+    .checkbox input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--color-accent);
+    }
+    .login-foot {
+      margin-top: var(--space-6);
+      text-align: center;
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+    }
+    @media (max-width: 900px) {
+      .login-page { grid-template-columns: 1fr; }
+      .login-brand { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="state-switcher">
+    <strong>审阅状态</strong>
+    <button type="button" class="state-btn is-active" data-state="default">默认</button>
+    <button type="button" class="state-btn" data-state="error">账号或密码错误</button>
+    <button type="button" class="state-btn" data-state="loading">登录中</button>
+  </div>
+
+  <div class="login-page">
+    <aside class="login-brand" aria-hidden="true">
+      <div class="login-brand-mark">
+        <div class="mark" aria-hidden="true">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            <path d="M8 7h8M8 11h6"/>
+          </svg>
+        </div>
+        <div class="name">企业 RAG 知识库</div>
+      </div>
+      <div class="login-brand-body">
+        <h1>用自然语言检索内部文档，答案带来源引用</h1>
+        <p>管理员维护知识库与成员；成员选库提问，每条回答附可点击引用，避免无依据的编造。</p>
+      </div>
+      <div class="login-brand-foot">单组织 · 本地账号 · 内部使用</div>
+    </aside>
+
+    <main class="login-panel">
+      <div class="login-card">
+        <h2>登录</h2>
+        <p class="sub">使用本组织下发的账号进入知识库。</p>
+
+        <div id="alert-error" class="alert alert-error hidden" role="alert" style="margin-bottom: var(--space-4);">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+          </svg>
+          <div>
+            <strong style="display:block; margin-bottom:2px;">无法登录</strong>
+            账号或密码不正确。请核对后重试；连续失败请联系管理员重置。
+          </div>
+        </div>
+
+        <form id="login-form" action="#" method="post" onsubmit="return false;">
+          <div class="field">
+            <label class="field-label" for="username">账号</label>
+            <input class="input" id="username" name="username" type="text" autocomplete="username" placeholder="例如 zhang.san" />
+          </div>
+          <div class="field">
+            <label class="field-label" for="password">密码</label>
+            <div class="password-wrap">
+              <input class="input" id="password" name="password" type="password" autocomplete="current-password" placeholder="输入密码" />
+              <button type="button" class="toggle-pw" aria-label="显示或隐藏密码" title="显示/隐藏">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="login-meta">
+            <label class="checkbox">
+              <input type="checkbox" name="remember" />
+              在本设备保持登录
+            </label>
+            <a href="#">忘记密码</a>
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg btn-block" id="submit-btn">
+            <span id="btn-label">登录</span>
+            <span id="btn-spinner" class="spinner hidden" style="width:18px;height:18px;border-width:2px;"></span>
+          </button>
+        </form>
+        <p class="login-foot">首期仅支持本地账号，不提供 SSO。账号由管理员在「成员与角色」中发放。</p>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var btns = document.querySelectorAll(".state-btn");
+      var alertEl = document.getElementById("alert-error");
+      var submitBtn = document.getElementById("submit-btn");
+      var label = document.getElementById("btn-label");
+      var spinner = document.getElementById("btn-spinner");
+      var user = document.getElementById("username");
+      var pass = document.getElementById("password");
+
+      function setState(name) {
+        btns.forEach(function (b) {
+          b.classList.toggle("is-active", b.getAttribute("data-state") === name);
+        });
+        alertEl.classList.toggle("hidden", name !== "error");
+        user.classList.toggle("is-error", name === "error");
+        pass.classList.toggle("is-error", name === "error");
+        var loading = name === "loading";
+        submitBtn.disabled = loading;
+        label.classList.toggle("hidden", loading);
+        spinner.classList.toggle("hidden", !loading);
+        if (loading) label.textContent = "登录中";
+        else label.textContent = "登录";
+      }
+
+      btns.forEach(function (b) {
+        b.addEventListener("click", function () {
+          setState(b.getAttribute("data-state"));
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

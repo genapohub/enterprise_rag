@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>成员与角色 · 企业 RAG 知识库</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <style>
+    .member-cell {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    .avatar-lg {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-pill);
+      background: var(--color-bg-muted);
+      color: var(--color-text-secondary);
+      display: grid;
+      place-items: center;
+      font-size: var(--text-sm);
+      font-weight: var(--weight-semibold);
+      flex-shrink: 0;
+    }
+    .member-name {
+      font-weight: var(--weight-medium);
+    }
+    .member-account {
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+      margin-top: 2px;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-5);
+    }
+    .search-box {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+      max-width: 320px;
+    }
+    .search-box svg {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-text-tertiary);
+      pointer-events: none;
+    }
+    .search-box .input { padding-left: 36px; }
+    .stats-row {
+      display: flex;
+      gap: var(--space-4);
+      margin-bottom: var(--space-5);
+      flex-wrap: wrap;
+    }
+    .stat-card {
+      flex: 1;
+      min-width: 140px;
+      padding: var(--space-4);
+    }
+    .stat-card .label {
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+      margin-bottom: var(--space-2);
+    }
+    .stat-card .value {
+      font-size: var(--text-2xl);
+      font-weight: var(--weight-semibold);
+      letter-spacing: -0.02em;
+    }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: var(--color-overlay);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: var(--space-4);
+    }
+    .modal {
+      width: 100%;
+      max-width: 440px;
+      background: var(--color-surface);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+      padding: var(--space-6);
+    }
+    .modal h3 {
+      margin: 0 0 var(--space-2);
+      font-size: var(--text-xl);
+      font-weight: var(--weight-semibold);
+    }
+    .modal-desc {
+      margin: 0 0 var(--space-5);
+      color: var(--color-text-secondary);
+      font-size: var(--text-sm);
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-3);
+      margin-top: var(--space-5);
+    }
+    .role-hint {
+      margin-top: var(--space-5);
+      padding: var(--space-4);
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+      line-height: var(--leading-relaxed);
+    }
+    .role-hint strong {
+      color: var(--color-text);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo" aria-hidden="true">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="sidebar-brand-text">企业 RAG 知识库</div>
+          <div class="sidebar-brand-sub">单组织 MVP</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav" aria-label="主导航">
+        <a class="nav-item" href="02-kb-list.html">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          知识库
+        </a>
+        <a class="nav-item" href="04-chat.html">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          对话问答
+        </a>
+        <a class="nav-item is-active" href="05-members.html">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          成员与角色
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-chip">
+          <div class="avatar">管</div>
+          <div>
+            <div class="user-name">王敏</div>
+            <div class="user-role">管理员</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <div class="state-switcher">
+        <strong>审阅状态</strong>
+        <button type="button" class="state-btn is-active" data-state="list">成员列表</button>
+        <button type="button" class="state-btn" data-state="invite">邀请成员</button>
+        <button type="button" class="state-btn" data-state="empty">空列表</button>
+      </div>
+
+      <header class="topbar">
+        <h1 class="topbar-title">成员与角色</h1>
+        <div class="topbar-actions">
+          <button type="button" class="btn btn-primary" id="btn-invite">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+            邀请成员
+          </button>
+        </div>
+      </header>
+
+      <div class="content content-narrow">
+        <div class="page-header">
+          <div>
+            <h1>组织成员</h1>
+            <p class="page-desc">首期仅两种角色：管理员（建库、上传/删除文档、管成员）与成员（问答 + 只读文档列表）。本地账号，无 SSO。</p>
+          </div>
+        </div>
+
+        <div id="view-list">
+          <div class="stats-row">
+            <div class="card stat-card">
+              <div class="label">全部成员</div>
+              <div class="value">6</div>
+            </div>
+            <div class="card stat-card">
+              <div class="label">管理员</div>
+              <div class="value">2</div>
+            </div>
+            <div class="card stat-card">
+              <div class="label">普通成员</div>
+              <div class="value">4</div>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="search-box">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <input class="input" type="search" placeholder="搜索姓名或账号" aria-label="搜索成员" />
+            </div>
+            <select class="select" style="width:auto;min-width:120px;" aria-label="按角色筛选">
+              <option>全部角色</option>
+              <option>管理员</option>
+              <option>成员</option>
+            </select>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data">
+              <thead>
+                <tr>
+                  <th>成员</th>
+                  <th>角色</th>
+                  <th>状态</th>
+                  <th>最近登录</th>
+                  <th style="text-align:right;">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <div class="member-cell">
+                      <div class="avatar-lg">王</div>
+                      <div>
+                        <div class="member-name">王敏</div>
+                        <div class="member-account">wang.min</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="badge badge-admin">管理员</span></td>
+                  <td><span class="badge badge-ready badge-dot">正常</span></td>
+                  <td>今天 18:40</td>
+                  <td>
+                    <div class="row-actions">
+                      <button type="button" class="btn btn-ghost btn-sm" disabled title="不可移除自己">—</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="member-cell">
+                      <div class="avatar-lg">周</div>
+                      <div>
+                        <div class="member-name">周航</div>
+                        <div class="member-account">zhou.hang</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="badge badge-admin">管理员</span></td>
+                  <td><span class="badge badge-ready badge-dot">正常</span></td>
+                  <td>昨天 21:12</td>
+                  <td>
+                    <div class="row-actions">
+                      <button type="button" class="btn btn-ghost btn-sm">改角色</button>
+                      <button type="button" class="btn btn-danger-outline btn-sm">停用</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="member-cell">
+                      <div class="avatar-lg">陈</div>
+                      <div>
+                        <div class="member-name">陈可</div>
+                        <div class="member-account">chen.ke</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="badge badge-member">成员</span></td>
+                  <td><span class="badge badge-ready badge-dot">正常</span></td>
+                  <td>今天 09:05</td>
+                  <td>
+                    <div class="row-actions">
+                      <button type="button" class="btn btn-ghost btn-sm">改角色</button>
+                      <button type="button" class="btn btn-danger-outline btn-sm">停用</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="member-cell">
+                      <div class="avatar-lg">李</div>
+                      <div>
+                        <div class="member-name">李晨</div>
+                        <div class="member-account">li.chen</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="badge badge-member">成员</span></td>
+                  <td><span class="badge badge-ready badge-dot">正常</span></td>
+                  <td>11-01 16:20</td>
+                  <td>
+                    <div class="row-actions">
+                      <button type="button" class="btn btn-ghost btn-sm">改角色</button>
+                      <button type="button" class="btn btn-danger-outline btn-sm">停用</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="member-cell">
+                      <div class="avatar-lg">赵</div>
+                      <div>
+                        <div class="member-name">赵宁</div>
+                        <div class="member-account">zhao.ning</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="badge badge-member">成员</span></td>
+                  <td><span class="badge badge-pending badge-dot">待激活</span></td>
+                  <td>—</td>
+                  <td>
+                    <div class="row-actions">
+                      <button type="button" class="btn btn-secondary btn-sm">重发邀请</button>
+                      <button type="button" class="btn btn-danger-outline btn-sm">移除</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="member-cell">
+                      <div class="avatar-lg">孙</div>
+                      <div>
+                        <div class="member-name">孙悦</div>
+                        <div class="member-account">sun.yue</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="badge badge-member">成员</span></td>
+                  <td><span class="badge badge-failed badge-dot">已停用</span></td>
+                  <td>10-12 11:03</td>
+                  <td>
+                    <div class="row-actions">
+                      <button type="button" class="btn btn-secondary btn-sm">恢复</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card role-hint">
+            <strong>权限差异（设计口径）</strong><br />
+            管理员：新建/归档知识库、上传与删除文档、邀请与停用成员、改角色。<br />
+            成员：选库提问、查看答案与引用、只读浏览库内文档列表；侧栏仍可见「成员与角色」但无写操作（实现时或整页只读提示）。
+          </div>
+        </div>
+
+        <div id="view-empty" class="card hidden">
+          <div class="state-panel">
+            <div class="state-panel-icon">
+              <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
+            <h2 class="state-panel-title">尚无其他成员</h2>
+            <p class="state-panel-desc">当前仅有你一名管理员。邀请同事后，他们可用本地账号登录并提问。</p>
+            <div class="state-panel-actions">
+              <button type="button" class="btn btn-primary" id="btn-invite-empty">邀请成员</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-invite" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="invite-title">
+    <div class="modal">
+      <h3 id="invite-title">邀请成员</h3>
+      <p class="modal-desc">创建本地账号并下发初始密码（或一次性链接）。首期不做邮箱 SSO。</p>
+      <div class="field">
+        <label class="field-label" for="invite-name">显示姓名</label>
+        <input class="input" id="invite-name" type="text" placeholder="例如 赵宁" />
+      </div>
+      <div class="field">
+        <label class="field-label" for="invite-account">登录账号</label>
+        <input class="input" id="invite-account" type="text" placeholder="例如 zhao.ning" />
+      </div>
+      <div class="field">
+        <label class="field-label" for="invite-role">角色</label>
+        <select class="select" id="invite-role">
+          <option>成员</option>
+          <option>管理员</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" id="btn-cancel-invite">取消</button>
+        <button type="button" class="btn btn-primary">创建并复制初始密码</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var list = document.getElementById("view-list");
+      var empty = document.getElementById("view-empty");
+      var modal = document.getElementById("modal-invite");
+      var btns = document.querySelectorAll(".state-btn");
+
+      function setState(name) {
+        btns.forEach(function (b) {
+          b.classList.toggle("is-active", b.getAttribute("data-state") === name);
+        });
+        list.classList.toggle("hidden", name === "empty");
+        empty.classList.toggle("hidden", name !== "empty");
+        modal.classList.toggle("hidden", name !== "invite");
+        if (name === "invite") {
+          list.classList.remove("hidden");
+          empty.classList.add("hidden");
+        }
+      }
+
+      btns.forEach(function (b) {
+        b.addEventListener("click", function () { setState(b.getAttribute("data-state")); });
+      });
+      document.getElementById("btn-invite").addEventListener("click", function () { setState("invite"); });
+      document.getElementById("btn-invite-empty").addEventListener("click", function () { setState("invite"); });
+      document.getElementById("btn-cancel-invite").addEventListener("click", function () { setState("list"); });
+      modal.addEventListener("click", function (e) {
+        if (e.target === modal) setState("list");
+      });
+    })();
+  </script>
+</body>
+</html>
